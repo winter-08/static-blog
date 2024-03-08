@@ -16,7 +16,7 @@ valid_text_types = {
     "text_type_bold": "bold",
     "text_type_italic": "italic",
     "text_type_code": "code",
-    "text_type_underline": "underline"
+    "text_type_underline": "underline",
 }
 
 
@@ -62,19 +62,22 @@ def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
 
     return node_mappings[text_node.text_type]()
 
-def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: str) -> list[TextNode]:
+
+def split_nodes_delimiter(
+    old_nodes: list[TextNode], delimiter: str, text_type: str
+) -> list[TextNode]:
     new_nodes = []
     for node in old_nodes:
         if not isinstance(node, TextNode) or node.text_type != "text":
             new_nodes.append(node)
             continue
-        #if delimiter not in node.text:
-            #new_nodes.append(node)
-            #continue
-            #raise ValueError('Delimiter not found')
+        # if delimiter not in node.text:
+        # new_nodes.append(node)
+        # continue
+        # raise ValueError('Delimiter not found')
         split_node = node.text.split(delimiter)
         if len(split_node) % 2 == 0:
-            raise ValueError('Closing delimiter not found')
+            raise ValueError("Closing delimiter not found")
         for i in range(len(split_node)):
             if i % 2 == 0:
                 if split_node[i]:
@@ -82,6 +85,7 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
             else:
                 new_nodes.append(TextNode(split_node[i], text_type))
     return new_nodes
+
 
 def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
     new_nodes = []
@@ -95,6 +99,7 @@ def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
             new_nodes.append(TextNode(img[0], "image", img[1]))
     return new_nodes
 
+
 def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
     new_nodes = []
     for node in old_nodes:
@@ -107,15 +112,18 @@ def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
             new_nodes.append(TextNode(link[0], "link", link[1]))
     return new_nodes
 
+
 def extract_markdown_images(text: str) -> list[tuple]:
     image_pattern = r"!\[(?P<alt>.*?)\]\((?P<link>.*?)\)"
     matches = re.findall(image_pattern, text)
     return [(alt, link) for alt, link in matches]
 
+
 def extract_markdown_links(text: str) -> list[tuple]:
     link_pattern = r"\[(?P<text>.*?)\]\((?P<url>.*?)\)"
     matches = re.findall(link_pattern, text)
     return [(text, url) for text, url in matches]
+
 
 def text_to_textnodes(text: str) -> list[TextNode]:
     whole_text_nodes = [TextNode(text, "text")]
@@ -125,4 +133,3 @@ def text_to_textnodes(text: str) -> list[TextNode]:
     split_nodes = split_nodes_image(split_nodes)
     split_nodes = split_nodes_link(split_nodes)
     return split_nodes
-
