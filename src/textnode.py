@@ -1,3 +1,4 @@
+import re
 from htmlnode import HTMLNode, LeafNode
 
 
@@ -10,6 +11,14 @@ text_types = {
     "text_type_image": "image",
 }
 
+valid_text_types = {
+    "text_type_text": "text",
+    "text_type_bold": "bold",
+    "text_type_italic": "italic",
+    "text_type_code": "code",
+    "text_type_underline": "underline"
+}
+
 
 class TextNode:
     def __init__(self, text: str, text_type: str, url: str = None) -> None:
@@ -18,11 +27,11 @@ class TextNode:
         self.url = url
 
     def __eq__(self, compNode) -> bool:
-        if self.text is not compNode.text:
+        if self.text != compNode.text:
             return False
-        if self.text_type is not compNode.text_type:
+        if self.text_type != compNode.text_type:
             return False
-        if self.url is not compNode.url:
+        if self.url != compNode.url:
             return False
         return True
 
@@ -53,5 +62,31 @@ def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
 
     return node_mappings[text_node.text_type]()
 
-def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: str) -> list:
-    pass
+def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: str) -> list:
+    split_nodes = []
+    for node in old_nodes:
+        if not isinstance(node, TextNode) or node.text_type != "text":
+            split_nodes.append(node)
+            continue
+        if delimiter not in node.text:
+            raise ValueError('Delimiter not found')
+        split_node = node.text.split(delimiter)
+        if len(split_node) % 2 == 0:
+            raise ValueError('Closing delimiter not found')
+        for i in range(len(split_node)):
+            if i % 2 == 0:
+                if split_node[i]:
+                    split_nodes.append(TextNode(split_node[i], "text"))
+            else:
+                split_nodes.append(TextNode(split_node[i], text_type))
+    return split_nodes
+
+def extract_markdown_images(text: str) -> list[tuple]:
+    image_pattern = r"!\[(?P<alt>.*?)\]\((?P<link>.*?)\)"
+    matches = re.findall(image_pattern, text)
+    return [(alt, link) for alt, link in matches]
+
+def extract_markdown_links(text: str) -> list[tuple]:
+    link_pattern = r"\[(?P<text>.*?)\]\((?P<url>.*?)\)"
+    matches = re.findall(link_pattern, text)
+    return [(text, url) for text, url in matches]
