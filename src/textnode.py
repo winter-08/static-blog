@@ -62,14 +62,16 @@ def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
 
     return node_mappings[text_node.text_type]()
 
-def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: str) -> list:
+def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: str) -> list[TextNode]:
     new_nodes = []
     for node in old_nodes:
         if not isinstance(node, TextNode) or node.text_type != "text":
             new_nodes.append(node)
             continue
-        if delimiter not in node.text:
-            raise ValueError('Delimiter not found')
+        #if delimiter not in node.text:
+            #new_nodes.append(node)
+            #continue
+            #raise ValueError('Delimiter not found')
         split_node = node.text.split(delimiter)
         if len(split_node) % 2 == 0:
             raise ValueError('Closing delimiter not found')
@@ -114,3 +116,13 @@ def extract_markdown_links(text: str) -> list[tuple]:
     link_pattern = r"\[(?P<text>.*?)\]\((?P<url>.*?)\)"
     matches = re.findall(link_pattern, text)
     return [(text, url) for text, url in matches]
+
+def text_to_textnodes(text: str) -> list[TextNode]:
+    whole_text_nodes = [TextNode(text, "text")]
+    split_nodes = split_nodes_delimiter(whole_text_nodes, "**", "bold")
+    split_nodes = split_nodes_delimiter(split_nodes, "*", "italic")
+    split_nodes = split_nodes_delimiter(split_nodes, "`", "code")
+    split_nodes = split_nodes_image(split_nodes)
+    split_nodes = split_nodes_link(split_nodes)
+    return split_nodes
+
