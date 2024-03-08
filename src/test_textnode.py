@@ -59,8 +59,11 @@ class TestSplitNodesDelimiter(unittest.TestCase):
 
     def test_split_nodes_no_delimiter(self):
         old_nodes = [TextNode("Hello world", "text")]
-        with self.assertRaises(ValueError):
-            split_nodes_delimiter(old_nodes, "**", "bold")
+        split_nodes = split_nodes_delimiter(old_nodes, "**", "bold")
+        expected_nodes = [TextNode("Hello world", "text")]
+        self.assertEqual(split_nodes, expected_nodes)
+        #with self.assertRaises(ValueError):
+            #split_nodes_delimiter(old_nodes, "**", "bold")
 
     def test_split_nodes_no_closing_delimiter(self):
         old_nodes = [TextNode("Hello **world", "text")]
