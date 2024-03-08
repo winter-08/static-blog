@@ -63,10 +63,10 @@ def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
     return node_mappings[text_node.text_type]()
 
 def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: str) -> list:
-    split_nodes = []
+    new_nodes = []
     for node in old_nodes:
         if not isinstance(node, TextNode) or node.text_type != "text":
-            split_nodes.append(node)
+            new_nodes.append(node)
             continue
         if delimiter not in node.text:
             raise ValueError('Delimiter not found')
@@ -76,10 +76,34 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
         for i in range(len(split_node)):
             if i % 2 == 0:
                 if split_node[i]:
-                    split_nodes.append(TextNode(split_node[i], "text"))
+                    new_nodes.append(TextNode(split_node[i], "text"))
             else:
-                split_nodes.append(TextNode(split_node[i], text_type))
-    return split_nodes
+                new_nodes.append(TextNode(split_node[i], text_type))
+    return new_nodes
+
+def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
+    new_nodes = []
+    for node in old_nodes:
+        extracted_images = extract_markdown_images(node.text)
+        if len(extracted_images) == 0:
+            if node.text:
+                new_nodes.append(node)
+            continue
+        for img in extracted_images:
+            new_nodes.append(TextNode(img[0], "image", img[1]))
+    return new_nodes
+
+def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
+    new_nodes = []
+    for node in old_nodes:
+        extracted_links = extract_markdown_links(node.text)
+        if len(extracted_links) == 0:
+            if node.text:
+                new_nodes.append(node)
+            continue
+        for link in extracted_links:
+            new_nodes.append(TextNode(link[0], "link", link[1]))
+    return new_nodes
 
 def extract_markdown_images(text: str) -> list[tuple]:
     image_pattern = r"!\[(?P<alt>.*?)\]\((?P<link>.*?)\)"
