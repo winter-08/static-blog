@@ -64,8 +64,9 @@ def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
 
 
 def split_nodes_delimiter(
-    old_nodes: list[TextNode], delimiter: str, text_type: str
-) -> list[TextNode]:
+        old_nodes: list[TextNode],
+        delimiter: str,
+        text_type: str) -> list[TextNode]:
     new_nodes = []
     for node in old_nodes:
         if not isinstance(node, TextNode) or node.text_type != "text":
