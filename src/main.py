@@ -2,6 +2,7 @@
 import os
 import shutil
 import re
+from html_markdown import markdown_to_html_node
 
 def main():
     __location__ = os.path.realpath(os.path.join(os.getcwd(), 'public'))
@@ -35,7 +36,20 @@ def extract_title(markdown: str) -> str:
 
 def generate_page(from_path: str, template_path: str, dest_path: str) -> None:
     print(f"generating page from {from_path} to {dest_path} using {template_path}")
-    pass
+    with open(from_path) as md:
+        md_file = md.read()
+        md.close()
+    with open(template_path) as tmp:
+        tmp_file = tmp.read()
+        tmp.close()
+    htmlNodes = markdown_to_html_node(md_file)
+    content = ""
+    for node in htmlNodes:
+        content.__add__(node.to_html())
+    title = extract_title(md_file)
+    tmp_file.replace('{{ Title }}', title)
+    tmp_file.replace('{{ Content }}', content)
+    os.makedirs(dest_path, exist_ok=True)
 
 if __name__ == "__main__":
     main()
