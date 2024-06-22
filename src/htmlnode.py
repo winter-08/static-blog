@@ -20,8 +20,6 @@ class HTMLNode:
             return res
         for prop in self.props:
             res += f' {prop}="{self.props[prop]}"'
-        # for key, value in self.props.items():
-        #    res += f' {key}="{value}"'
         return res
 
     def __repr__(self) -> str:
