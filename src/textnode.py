@@ -40,23 +40,23 @@ class TextNode:
 
 
 def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
-    if text_node.text_type not in text_types:
+    if text_node.text_type not in text_types.values():
         raise ValueError(
-            f"Invalid text_type: {text_node.text_type}. Valid types are: {', '.join(text_types.keys())}"
+            f"Invalid text_type: {text_node.text_type}. Valid types are: {', '.join(text_types.values())}"
         )
 
     node_mappings = {
-        "text": lambda: LeafNode(value=text_node.text),
+        "text": lambda: LeafNode(tag=None, value=text_node.text),
         "bold": lambda: LeafNode(tag="b", value=text_node.text),
-        "italic": lambda: HTMLNode(tag="i", value=text_node.text),
-        "code": lambda: HTMLNode(tag="code", value=text_node.text),
-        "link": lambda: HTMLNode(
+        "italic": lambda: LeafNode(tag="i", value=text_node.text),
+        "code": lambda: LeafNode(tag="code", value=text_node.text),
+        "link": lambda: LeafNode(
             tag="a",
             value=text_node.text,
             props={"href": text_node.url, "target": "_blank"},
         ),
-        "image": lambda: HTMLNode(
-            tag="img", props={"src": text_node.url, "alt": text_node.text}
+        "image": lambda: LeafNode(
+            tag="img", value="", props={"src": text_node.url, "alt": text_node.text}
         ),
     }
 
@@ -77,7 +77,10 @@ def split_nodes_delimiter(
         # continue
         # raise ValueError('Delimiter not found')
         split_node = node.text.split(delimiter)
+        if all(item == "" for item in split_node):
+            continue
         if len(split_node) % 2 == 0:
+            print(split_node)
             raise ValueError("Closing delimiter not found")
         for i in range(len(split_node)):
             if i % 2 == 0:
@@ -97,6 +100,8 @@ def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
                 new_nodes.append(node)
             continue
         for img in extracted_images:
+            print(f"text: {img[0]}")
+            print(f"url: {img[1]}")
             new_nodes.append(TextNode(img[0], "image", img[1]))
     return new_nodes
 
@@ -127,7 +132,7 @@ def extract_markdown_links(text: str) -> list[tuple]:
 
 
 def text_to_textnodes(text: str) -> list[TextNode]:
-    whole_text_nodes = [TextNode(text, "text")]
+    whole_text_nodes = [TextNode(text, text_types["text_type_text"])]
     split_nodes = split_nodes_delimiter(whole_text_nodes, "**", "bold")
     split_nodes = split_nodes_delimiter(split_nodes, "*", "italic")
     split_nodes = split_nodes_delimiter(split_nodes, "`", "code")

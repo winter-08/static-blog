@@ -1,11 +1,11 @@
 import re
 
-from htmlnode import HTMLNode
+from htmlnode import HTMLNode, ParentNode 
 from textnode import text_to_textnodes, text_node_to_html_node
 
 def markdown_to_blocks(text: str) -> list[str]:
-    blocks = text.split("\n")
-    blocks = [item.strip() for item in blocks if item.strip()]
+    blocks = text.split("\n\n")
+    blocks = [item.strip() for item in blocks if item.strip() and item != ""]
     return blocks
 
 block_type_paragraph = "paragraph"
@@ -30,60 +30,105 @@ def block_to_block_type(text: str) -> str:
 
 #tag, value, children, props
 
-def heading_block_to_html_node(text: str) -> HTMLNode:
-    match = re.match(r'^(#{1,6})\s+(.+)$', text)
+def heading_block_to_html_node(block: str) -> ParentNode:
+    match = re.match(r'^(#{1,6})\s+(.+)$', block)
     if match:
         count = len(match.group(1))
-        tag = f"h{count}"
-        value = match.group(2)
-        node = HTMLNode(tag, value, None, None)
-        return node
-    else:
-        raise ValueError(f"Invalid heading block: {text}")
+        text = block[count + 1 :]
+        children = text_to_children(text)
+        #print(f"heading: {len(children)}")
+        return ParentNode(f"h{count}", children)
+    raise ValueError(f"Invalid heading block: {text}")
 
-def code_block_to_html_node(text: str) -> HTMLNode:
+def code_block_to_html_node(block: str) -> ParentNode:
     #wrap in pre tag
-    text_raw = text.strip('```')
-    node = HTMLNode("pre", None, [HTMLNode("code", text_raw, None, None)], None)
-    return node
+    text = block.strip('```')
+    #print(text)
+    children = text_to_children(text)
+    #print(f"cody: {len(children)}")
+    code = ParentNode("code", children)
+    return ParentNode("pre", [code])
 
-def quote_block_to_html_node(text: str) -> HTMLNode:
-    text_raw = text.strip('>')
-    node = HTMLNode("blockquote", text_raw, None, None)
-    return node
+def quote_block_to_html_node(block: str) -> ParentNode:
+    lines = block.split("\n")
+    new_lines = []
+    for line in lines:
+        if not line.startswith(">"):
+            raise ValueError("invalid quote")
+        new_lines.append(line.strip('> '))
+    text = " ".join(new_lines)
+    children = text_to_children(text)
+    #print(f"quotes: {len(children)}")
+    return ParentNode("blockquote", children)
 
-def ordered_list_to_html_node(text: str) -> HTMLNode:
+def ordered_list_to_html_node(block: str) -> HTMLNode:
     #wrap in ol tag
-    text_raw = text.split('. ', 2)
-    node = HTMLNode("ol", text_raw, None, None)
-    return node
+    lines = block.split("\n")
+    html_items = []
+    for line in lines:
+        text = line[3:]
+        children = text_to_children(text)
+        #print(f"li_items: {len(children)}")
+        html_items.append(ParentNode("li", children))
+    #print(f"ol_items: {len(html_items)}")
+    return ParentNode("ol", html_items)
 
-def unordered_list_to_html_node(text: str) -> HTMLNode:
+def unordered_list_to_html_node(block: str) -> ParentNode:
     #wrap in ul tag
-    text_raw = text.strip('-')
-    text_raw = text.strip('*')
-    node = HTMLNode("ul", text_raw, None, None)
-    return node
+    lines = block.split("\n")
+    html_items = []
+    for line in lines:
+        text = line[2:]
+        children = text_to_children(text)
+        #print(f"li_line_items: {len(children)}")
+        html_items.append(ParentNode("li", children))
+    #print(f"html_items: {len(html_items)}")
+    return ParentNode("ul", html_items)
 
-def markdown_to_html_node(markdown: str) -> list[HTMLNode]:
-    html_node = HTMLNode("div", None, [], None)
+def paragraph_to_html_node(block: str) -> HTMLNode:
+    lines = block.split("\n")
+    paragraph = " ".join(lines)
+    children = text_to_children(paragraph)
+    if children:
+        #print(f"paragraph: {len(children)}")
+        return ParentNode("p", children)
+    raise ValueError("No children in paragraph")
+
+def text_to_children(text: str) -> [HTMLNode]:
+    text_nodes = text_to_textnodes(text)
+    children = []
+    for node in text_nodes:
+        children.append(text_node_to_html_node(node))
+    return children
+
+
+def markdown_to_html_node(markdown: str) -> ParentNode:
+    #html_node = ParentNode("div", [])
     blocks = markdown_to_blocks(markdown)
+    children = []
     for block in blocks:
-        block_type = block_to_block_type(block)
-        if block_type == block_type_heading:
-            html_node.children.append(heading_block_to_html_node(block))
-        if block_type == block_type_code:
-            html_node.children.append(code_block_to_html_node(block))
-        if block_type == block_type_quote:
-            html_node.children.append(quote_block_to_html_node(block))
-        if block_type == block_type_ordered_list:
-            html_node.children.append(block_type_ordered_list(block))
-        if block_type == block_type_unordered_list:
-            html_node.children.append(unordered_list_to_html_node(block))
-        else:
-            nodes = text_to_textnodes(block.value)
-            html_node.children.append(HTMLNode("p", "", lambda node: text_node_to_html_node(node), nodes))
-    return html_node
+        html_node = block_to_html_node(block)
+        children.append(html_node)
+    #print(f"children length: {len(children)}")
+    #parent = ParentNode("div", children)
+    #print(f"len: {parent}")
+    return ParentNode("div", children)
+
+def block_to_html_node(block: str) -> HTMLNode:
+    block_type = block_to_block_type(block)
+    if block_type == block_type_paragraph:
+        return paragraph_to_html_node(block)
+    if block_type == block_type_heading:
+        return heading_block_to_html_node(block)
+    if block_type == block_type_code:
+        return code_block_to_html_node(block)
+    if block_type == block_type_quote:
+        return quote_block_to_html_node(block)
+    if block_type == block_type_ordered_list:
+        return ordered_list_to_html_node(block)
+    if block_type == block_type_unordered_list:
+        return unordered_list_to_html_node(block)
+    raise ValueError('invalid block type')
 
     
 def is_markdown_heading_block(text: str) -> bool:
